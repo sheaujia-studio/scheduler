@@ -442,7 +442,7 @@
   }
 
   async function loadRequests() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('reschedule_requests')
       .select(`
         *,
@@ -505,7 +505,7 @@
     btn.closest('.action-btns').querySelectorAll('button').forEach(b => b.disabled = true);
 
     // Update request status
-    const { error: reqError } = await supabase
+    const { error: reqError } = await supabaseClient
       .from('reschedule_requests')
       .update({ status })
       .eq('id', reqId);
@@ -514,7 +514,7 @@
 
     // If approved, update student's slot
     if (status === 'approved') {
-      const { error: stuError } = await supabase
+      const { error: stuError } = await supabaseClient
         .from('students')
         .update({ current_slot_id: newSlotId })
         .eq('id', studentId);
@@ -546,7 +546,7 @@
   }
 
   async function loadStudents() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('students')
       .select('*, current_slot:slots(*)')
       .order('name');
