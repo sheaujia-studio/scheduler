@@ -426,11 +426,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { createClient } = window.supabase;
+  const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let allSlots = [];
 
   async function init() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session || session.user.email !== ADMIN_EMAIL) {
       window.location.href = 'index.html';
       return;
@@ -526,7 +527,7 @@
   }
 
   async function loadSlots() {
-    const { data } = await supabase.from('slots').select('*').eq('is_available', true).order('day_of_week').order('start_time');
+    const { data } = await supabaseClient.from('slots').select('*').eq('is_available', true).order('day_of_week').order('start_time');
     allSlots = data || [];
 
     const DAYS_ORDER = ['Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -596,7 +597,7 @@
     btn.textContent = 'Adding…';
 
     // Insert student record
-    const { error: stuError } = await supabase.from('students').insert({
+    const { error: stuError } = await supabaseClient.from('students').insert({
       name,
       parent_name: parentName,
       parent_email: email,
@@ -611,9 +612,9 @@
     }
 
     // Send magic link / invite via Supabase Auth
-    const { error: inviteError } = await supabase.auth.admin?.inviteUserByEmail?.(email) || { error: null };
+    const { error: inviteError } = await supabaseClient.auth.admin?.inviteUserByEmail?.(email) || { error: null };
     // Note: inviteUserByEmail requires service role key — we'll use signUp instead which sends confirmation email
-    const { error: authError } = await supabase.auth.signUp({
+    const { error: authError } = await supabaseClient.auth.signUp({
       email,
       password: Math.random().toString(36).slice(-10) + 'Aa1!',
       options: { emailRedirectTo: window.location.origin + '/index.html' }
@@ -637,7 +638,7 @@
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.href = 'index.html';
   }
 

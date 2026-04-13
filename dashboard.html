@@ -472,7 +472,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { createClient } = window.supabase;
+  const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null;
   let studentData = null;
@@ -484,7 +485,7 @@
   const DAYS_ORDER = ['Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
   async function init() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'index.html'; return; }
     currentUser = session.user;
     document.getElementById('userEmail').textContent = currentUser.email;
@@ -607,7 +608,7 @@
     btn.disabled = true;
     btn.textContent = 'Submitting…';
 
-    const { error } = await supabase.from('reschedule_requests').insert({
+    const { error } = await supabaseClient.from('reschedule_requests').insert({
       student_id: studentData.id,
       current_slot_id: studentData.current_slot_id,
       requested_slot_id: selectedSlotId,
@@ -656,7 +657,7 @@
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.href = 'index.html';
   }
 
