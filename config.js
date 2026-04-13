@@ -1,0 +1,3 @@
+const SUPABASE_URL = 'https://oacagcnypbdwrpjdhomu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hY2FnY255cGJkd3JwamRob211Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMTc5NDYsImV4cCI6MjA5MTU5Mzk0Nn0.cP-P4ti0tDkYBuoIy5bbioVKgu2RkBTHvjns9QX46Hs';
+const ADMIN_EMAIL = 'sheaujia.studio@gmail.com';

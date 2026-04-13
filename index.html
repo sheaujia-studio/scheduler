@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SheauJia Studio Scheduler</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1a2e;
+      --gold: #c9a84c;
+      --gold-light: #e8d5a3;
+      --cream: #faf7f2;
+      --muted: #7a7a8a;
+      --error: #c0392b;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .bg-ornament {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-ornament::before {
+      content: '';
+      position: absolute;
+      top: -200px; right: -200px;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+    }
+
+    .bg-ornament::after {
+      content: '';
+      position: absolute;
+      bottom: -150px; left: -150px;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+    }
+
+    .staff-lines {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.04;
+    }
+
+    .staff-lines span {
+      position: absolute;
+      left: 0; right: 0;
+      height: 1px;
+      background: var(--ink);
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: white;
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 4px;
+      padding: 52px 48px 44px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(26,26,46,0.08), 0 4px 16px rgba(26,26,46,0.04);
+      animation: fadeUp 0.6s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .brand-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.7rem;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 28px;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(201,168,76,0.3);
+    }
+
+    .divider-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #e0ddd8;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: var(--ink);
+      background: #fdfcfa;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      margin-bottom: 20px;
+    }
+
+    input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      background: var(--ink);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 4px;
+    }
+
+    .btn:hover { background: #2d2d4a; }
+    .btn:active { transform: scale(0.99); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .error-msg {
+      background: #fdf0ef;
+      border: 1px solid #f5c6c2;
+      color: var(--error);
+      padding: 10px 14px;
+      border-radius: 3px;
+      font-size: 0.83rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .error-msg.show { display: block; }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid #f0ede8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-ornament"></div>
+<div class="staff-lines" id="staffLines"></div>
+
+<div class="card">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="23" stroke="#c9a84c" stroke-width="1.5"/>
+        <path d="M18 32V18l16-4v14" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="15" cy="32" r="3" fill="#c9a84c"/>
+        <circle cx="31" cy="28" r="3" fill="#c9a84c"/>
+        <line x1="18" y1="23" x2="34" y2="19" stroke="#c9a84c" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <h1>SheauJia Studio</h1>
+    <div class="brand-sub">Lesson Scheduler</div>
+  </div>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-dot"></div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <label for="email">Email Address</label>
+  <input type="email" id="email" placeholder="your@email.com" autocomplete="email"/>
+
+  <label for="password">Password</label>
+  <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"/>
+
+  <button class="btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
+
+  <div class="footer-note">
+    Contact your teacher if you need access or have forgotten your password.
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+  // Draw staff lines
+  const staffLines = document.getElementById('staffLines');
+  for (let i = 0; i < 30; i++) {
+    const line = document.createElement('span');
+    line.style.top = (i * 36 + 20) + 'px';
+    staffLines.appendChild(line);
+  }
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Redirect if already logged in
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) redirectUser(session.user.email);
+  });
+
+  async function handleLogin() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('errorMsg');
+
+    err.classList.remove('show');
+
+    if (!email || !password) {
+      err.textContent = 'Please enter your email and password.';
+      err.classList.add('show');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      err.textContent = 'Invalid email or password. Please try again.';
+      err.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+      return;
+    }
+
+    redirectUser(data.user.email);
+  }
+
+  function redirectUser(email) {
+    if (email === ADMIN_EMAIL) {
+      window.location.href = 'admin.html';
+    } else {
+      window.location.href = 'dashboard.html';
+    }
+  }
+
+  // Allow Enter key
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleLogin();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — SheauJia Studio Scheduler</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1a2e;
+      --gold: #c9a84c;
+      --cream: #faf7f2;
+      --muted: #7a7a8a;
+      --success: #2d6a4f;
+      --success-bg: #d8f3dc;
+      --error: #c0392b;
+      --error-bg: #fdf0ef;
+      --pending: #7d5a00;
+      --pending-bg: #fff8e1;
+    }
+
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+    header {
+      background: var(--ink);
+      color: white;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-brand span { color: var(--gold); }
+
+    .admin-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--gold);
+      color: var(--ink);
+      padding: 3px 8px;
+      border-radius: 2px;
+      font-weight: 500;
+    }
+
+    .sign-out-btn {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 6px 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .sign-out-btn:hover { color: white; border-color: rgba(255,255,255,0.5); }
+
+    /* Tabs */
+    .tabs {
+      background: white;
+      border-bottom: 1px solid #ede9e3;
+      padding: 0 32px;
+      display: flex;
+      gap: 0;
+    }
+
+    .tab {
+      padding: 16px 24px;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .tab.active { color: var(--ink); border-bottom-color: var(--gold); }
+    .tab:hover:not(.active) { color: var(--ink); }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+      animation: fadeIn 0.4s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .section-sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 4px;
+      box-shadow: 0 2px 12px rgba(26,26,46,0.04);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    /* Requests table */
+    .req-table { width: 100%; border-collapse: collapse; }
+
+    .req-table th {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 20px;
+      text-align: left;
+      background: #fdfcfa;
+      border-bottom: 1px solid #f0ede8;
+    }
+
+    .req-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f7f4f0;
+      font-size: 0.85rem;
+      vertical-align: middle;
+    }
+
+    .req-table tr:last-child td { border-bottom: none; }
+    .req-table tr:hover td { background: #fdfcfa; }
+
+    .student-cell strong { display: block; }
+    .student-cell span { font-size: 0.78rem; color: var(--muted); }
+
+    .slot-cell { font-size: 0.83rem; }
+    .slot-cell .day { font-size: 0.7rem; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .arrow { color: var(--muted); font-size: 0.75rem; padding: 0 4px; }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 500;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .badge-pending { background: var(--pending-bg); color: var(--pending); }
+    .badge-approved { background: var(--success-bg); color: var(--success); }
+    .badge-rejected { background: var(--error-bg); color: var(--error); }
+
+    .action-btns { display: flex; gap: 8px; }
+
+    .btn-approve, .btn-reject {
+      padding: 6px 16px;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      border: none;
+      transition: opacity 0.15s;
+    }
+
+    .btn-approve { background: var(--success); color: white; }
+    .btn-reject { background: var(--error-bg); color: var(--error); border: 1px solid #f5c6c2; }
+    .btn-approve:hover, .btn-reject:hover { opacity: 0.85; }
+    .btn-approve:disabled, .btn-reject:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    /* Students tab */
+    .students-table { width: 100%; border-collapse: collapse; }
+
+    .students-table th {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 20px;
+      text-align: left;
+      background: #fdfcfa;
+      border-bottom: 1px solid #f0ede8;
+    }
+
+    .students-table td {
+      padding: 14px 20px;
+      border-bottom: 1px solid #f7f4f0;
+      font-size: 0.85rem;
+    }
+
+    .students-table tr:last-child td { border-bottom: none; }
+    .students-table tr:hover td { background: #fdfcfa; }
+
+    /* Add student form */
+    .add-student-card {
+      background: white;
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 4px;
+      padding: 28px 32px;
+      box-shadow: 0 2px 12px rgba(26,26,46,0.04);
+      margin-bottom: 24px;
+    }
+
+    .form-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(201,168,76,0.25);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+    .form-group label {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .form-group input, .form-group select {
+      padding: 10px 12px;
+      border: 1px solid #e0ddd8;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      color: var(--ink);
+      background: #fdfcfa;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+
+    .btn-add {
+      padding: 11px 28px;
+      background: var(--ink);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-add:hover { background: #2d2d4a; }
+    .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      padding: 14px 20px;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      z-index: 999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--success); color: white; }
+    .toast.error { background: var(--error); color: white; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .req-table, .students-table { font-size: 0.78rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="22" stroke="#c9a84c" stroke-width="1.5"/>
+      <path d="M18 32V18l16-4v14" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="15" cy="32" r="3" fill="#c9a84c"/>
+      <circle cx="31" cy="28" r="3" fill="#c9a84c"/>
+    </svg>
+    SheauJia <span>Studio</span>
+    <div class="admin-tag">Admin</div>
+  </div>
+  <button class="sign-out-btn" onclick="signOut()">Sign Out</button>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('requests', this)">Reschedule Requests</button>
+  <button class="tab" onclick="switchTab('students', this)">Students</button>
+</div>
+
+<main>
+
+  <!-- REQUESTS TAB -->
+  <div class="tab-content active" id="tab-requests">
+    <div class="section-title">Reschedule Requests</div>
+    <div class="section-sub">Review and approve or reject pending requests from parents.</div>
+
+    <div class="card">
+      <div id="requestsArea" class="loading">Loading requests…</div>
+    </div>
+  </div>
+
+  <!-- STUDENTS TAB -->
+  <div class="tab-content" id="tab-students">
+    <div class="section-title">Students</div>
+    <div class="section-sub">Add students and assign their lesson slots. Parents use their email to log in.</div>
+
+    <!-- Add student form -->
+    <div class="add-student-card">
+      <div class="form-title">Add New Student</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Student Name</label>
+          <input type="text" id="f-student-name" placeholder="e.g. Sarah Tan"/>
+        </div>
+        <div class="form-group">
+          <label>Parent Name</label>
+          <input type="text" id="f-parent-name" placeholder="e.g. Mrs Tan"/>
+        </div>
+        <div class="form-group">
+          <label>Parent Email</label>
+          <input type="email" id="f-parent-email" placeholder="parent@email.com"/>
+        </div>
+        <div class="form-group">
+          <label>Parent Phone</label>
+          <input type="text" id="f-parent-phone" placeholder="e.g. +60 12-345 6789"/>
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label>Assign Slot</label>
+          <select id="f-slot">
+            <option value="">— Select a time slot —</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-add" onclick="addStudent()">Add Student & Send Invite</button>
+    </div>
+
+    <!-- Students list -->
+    <div class="card">
+      <div id="studentsArea" class="loading">Loading students…</div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let allSlots = [];
+
+  async function init() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || session.user.email !== ADMIN_EMAIL) {
+      window.location.href = 'index.html';
+      return;
+    }
+    await loadRequests();
+    await loadSlots();
+    await loadStudents();
+  }
+
+  async function loadRequests() {
+    const { data, error } = await supabase
+      .from('reschedule_requests')
+      .select(`
+        *,
+        student:students(name, parent_name, parent_email, parent_phone),
+        current_slot:slots!reschedule_requests_current_slot_id_fkey(*),
+        requested_slot:slots!reschedule_requests_requested_slot_id_fkey(*)
+      `)
+      .order('created_at', { ascending: false });
+
+    const area = document.getElementById('requestsArea');
+
+    if (error) { area.innerHTML = '<div class="empty-state">Error loading requests.</div>'; return; }
+    if (!data || !data.length) { area.innerHTML = '<div class="empty-state">No requests yet.</div>'; return; }
+
+    area.innerHTML = `
+      <table class="req-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>From</th>
+            <th></th>
+            <th>To</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(r => `
+            <tr>
+              <td class="student-cell">
+                <strong>${r.student?.name || '—'}</strong>
+                <span>${r.student?.parent_name || ''} · ${r.student?.parent_phone || ''}</span>
+              </td>
+              <td class="slot-cell">
+                <div class="day">${r.current_slot?.day_of_week || ''}</div>
+                ${r.current_slot ? fmt(r.current_slot.start_time) + ' – ' + fmt(r.current_slot.end_time) : '—'}
+              </td>
+              <td class="arrow">→</td>
+              <td class="slot-cell">
+                <div class="day">${r.requested_slot?.day_of_week || ''}</div>
+                ${r.requested_slot ? fmt(r.requested_slot.start_time) + ' – ' + fmt(r.requested_slot.end_time) : '—'}
+              </td>
+              <td style="color:var(--muted);font-size:0.78rem;">${new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td>
+              <td><span class="badge badge-${r.status}">${r.status}</span></td>
+              <td>
+                ${r.status === 'pending' ? `
+                  <div class="action-btns">
+                    <button class="btn-approve" onclick="handleRequest('${r.id}', 'approved', '${r.student_id}', '${r.requested_slot_id}', this)">Approve</button>
+                    <button class="btn-reject" onclick="handleRequest('${r.id}', 'rejected', '${r.student_id}', '${r.requested_slot_id}', this)">Reject</button>
+                  </div>` : '—'}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  async function handleRequest(reqId, status, studentId, newSlotId, btn) {
+    btn.closest('.action-btns').querySelectorAll('button').forEach(b => b.disabled = true);
+
+    // Update request status
+    const { error: reqError } = await supabase
+      .from('reschedule_requests')
+      .update({ status })
+      .eq('id', reqId);
+
+    if (reqError) { showToast('Error updating request.', 'error'); return; }
+
+    // If approved, update student's slot
+    if (status === 'approved') {
+      const { error: stuError } = await supabase
+        .from('students')
+        .update({ current_slot_id: newSlotId })
+        .eq('id', studentId);
+
+      if (stuError) { showToast('Request approved but slot update failed.', 'error'); return; }
+    }
+
+    showToast(status === 'approved' ? 'Request approved and slot updated!' : 'Request rejected.', 'success');
+    await loadRequests();
+  }
+
+  async function loadSlots() {
+    const { data } = await supabase.from('slots').select('*').eq('is_available', true).order('day_of_week').order('start_time');
+    allSlots = data || [];
+
+    const DAYS_ORDER = ['Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const sorted = [...allSlots].sort((a,b) => {
+      const di = DAYS_ORDER.indexOf(a.day_of_week) - DAYS_ORDER.indexOf(b.day_of_week);
+      if (di !== 0) return di;
+      return a.start_time.localeCompare(b.start_time);
+    });
+
+    const select = document.getElementById('f-slot');
+    select.innerHTML = '<option value="">— Select a time slot —</option>';
+    sorted.forEach(s => {
+      const dur = duration(s.start_time, s.end_time);
+      select.innerHTML += `<option value="${s.id}">${s.day_of_week} ${fmt(s.start_time)}–${fmt(s.end_time)} (${dur}min)</option>`;
+    });
+  }
+
+  async function loadStudents() {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*, current_slot:slots(*)')
+      .order('name');
+
+    const area = document.getElementById('studentsArea');
+
+    if (error) { area.innerHTML = '<div class="empty-state">Error loading students.</div>'; return; }
+    if (!data || !data.length) { area.innerHTML = '<div class="empty-state">No students added yet. Use the form above to add your first student.</div>'; return; }
+
+    area.innerHTML = `
+      <table class="students-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Parent</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Current Slot</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(s => `
+            <tr>
+              <td><strong>${s.name}</strong></td>
+              <td>${s.parent_name}</td>
+              <td style="color:var(--muted);font-size:0.8rem;">${s.parent_email}</td>
+              <td style="color:var(--muted);font-size:0.8rem;">${s.parent_phone}</td>
+              <td>${s.current_slot ? `<span style="color:var(--gold);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;">${s.current_slot.day_of_week}</span><br>${fmt(s.current_slot.start_time)} – ${fmt(s.current_slot.end_time)}` : '<span style="color:var(--muted)">—</span>'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  async function addStudent() {
+    const name = document.getElementById('f-student-name').value.trim();
+    const parentName = document.getElementById('f-parent-name').value.trim();
+    const email = document.getElementById('f-parent-email').value.trim();
+    const phone = document.getElementById('f-parent-phone').value.trim();
+    const slotId = document.getElementById('f-slot').value;
+    const btn = document.querySelector('.btn-add');
+
+    if (!name || !parentName || !email || !phone) {
+      showToast('Please fill in all fields.', 'error'); return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Adding…';
+
+    // Insert student record
+    const { error: stuError } = await supabase.from('students').insert({
+      name,
+      parent_name: parentName,
+      parent_email: email,
+      parent_phone: phone,
+      current_slot_id: slotId || null
+    });
+
+    if (stuError) {
+      showToast('Error adding student: ' + stuError.message, 'error');
+      btn.disabled = false; btn.textContent = 'Add Student & Send Invite';
+      return;
+    }
+
+    // Send magic link / invite via Supabase Auth
+    const { error: inviteError } = await supabase.auth.admin?.inviteUserByEmail?.(email) || { error: null };
+    // Note: inviteUserByEmail requires service role key — we'll use signUp instead which sends confirmation email
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password: Math.random().toString(36).slice(-10) + 'Aa1!',
+      options: { emailRedirectTo: window.location.origin + '/index.html' }
+    });
+
+    // Clear form
+    ['f-student-name','f-parent-name','f-parent-email','f-parent-phone'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-slot').value = '';
+
+    showToast(`${name} added! ${authError ? 'Note: invite email may not have sent — set password manually in Supabase Auth.' : 'Invite email sent to parent.'}`, 'success');
+    btn.disabled = false;
+    btn.textContent = 'Add Student & Send Invite';
+    await loadStudents();
+  }
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    window.location.href = 'index.html';
+  }
+
+  function fmt(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':');
+    const hr = parseInt(h);
+    const ampm = hr >= 12 ? 'pm' : 'am';
+    const hr12 = hr > 12 ? hr - 12 : hr === 0 ? 12 : hr;
+    return `${hr12}:${m}${ampm}`;
+  }
+
+  function duration(start, end) {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm);
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 5000);
+  }
+
+  init();
+</script>
+</body>
+</html>

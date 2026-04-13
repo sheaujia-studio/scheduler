@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Schedule — SheauJia Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1a2e;
+      --gold: #c9a84c;
+      --gold-light: #e8d5a3;
+      --cream: #faf7f2;
+      --muted: #7a7a8a;
+      --success: #2d6a4f;
+      --success-bg: #d8f3dc;
+      --error: #c0392b;
+      --error-bg: #fdf0ef;
+      --pending: #7d5a00;
+      --pending-bg: #fff8e1;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--ink);
+      color: white;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-brand span {
+      color: var(--gold);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .user-email {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.55);
+    }
+
+    .sign-out-btn {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 6px 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .sign-out-btn:hover {
+      color: white;
+      border-color: rgba(255,255,255,0.5);
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      animation: fadeIn 0.5s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 36px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 4px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(26,26,46,0.04);
+    }
+
+    .card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(201,168,76,0.25);
+    }
+
+    .current-slot {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--cream);
+      border-radius: 3px;
+      border-left: 3px solid var(--gold);
+    }
+
+    .slot-day {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 500;
+    }
+
+    .slot-time {
+      font-size: 1.3rem;
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .slot-duration {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .student-name {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    .student-name strong {
+      color: var(--ink);
+    }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .filter-btn {
+      padding: 6px 16px;
+      border: 1px solid #e0ddd8;
+      border-radius: 20px;
+      background: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--muted);
+    }
+
+    .filter-btn.active {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+    }
+
+    .filter-btn:hover:not(.active) {
+      border-color: var(--gold);
+      color: var(--ink);
+    }
+
+    /* Duration filter */
+    .duration-filter {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .dur-btn {
+      padding: 6px 16px;
+      border: 1px solid #e0ddd8;
+      border-radius: 20px;
+      background: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--muted);
+    }
+
+    .dur-btn.active {
+      background: var(--gold);
+      color: white;
+      border-color: var(--gold);
+    }
+
+    /* Slots grid */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .slot-option {
+      padding: 14px 16px;
+      border: 1px solid #e8e5e0;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: white;
+    }
+
+    .slot-option:hover {
+      border-color: var(--gold);
+      box-shadow: 0 2px 8px rgba(201,168,76,0.15);
+    }
+
+    .slot-option.selected {
+      border-color: var(--gold);
+      background: #fffbf0;
+      box-shadow: 0 0 0 2px rgba(201,168,76,0.25);
+    }
+
+    .slot-option .s-day {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .slot-option .s-time {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .slot-option .s-dur {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .no-slots {
+      text-align: center;
+      padding: 32px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      grid-column: 1/-1;
+    }
+
+    .submit-area {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .selected-info {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .selected-info strong {
+      color: var(--ink);
+    }
+
+    .btn-submit {
+      padding: 12px 28px;
+      background: var(--ink);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.83rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-submit:hover { background: #2d2d4a; }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      padding: 14px 20px;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      z-index: 999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { background: var(--success); color: white; }
+    .toast.error { background: var(--error); color: white; }
+
+    /* Requests history */
+    .request-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid #f0ede8;
+      gap: 12px;
+    }
+
+    .request-item:last-child { border-bottom: none; }
+
+    .request-slots {
+      flex: 1;
+    }
+
+    .request-arrow {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 4px 0;
+    }
+
+    .request-date {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .badge-pending { background: var(--pending-bg); color: var(--pending); }
+    .badge-approved { background: var(--success-bg); color: var(--success); }
+    .badge-rejected { background: var(--error-bg); color: var(--error); }
+
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 32px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="22" stroke="#c9a84c" stroke-width="1.5"/>
+      <path d="M18 32V18l16-4v14" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="15" cy="32" r="3" fill="#c9a84c"/>
+      <circle cx="31" cy="28" r="3" fill="#c9a84c"/>
+    </svg>
+    SheauJia <span>Studio</span>
+  </div>
+  <div class="header-right">
+    <span class="user-email" id="userEmail"></span>
+    <button class="sign-out-btn" onclick="signOut()">Sign Out</button>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">My Schedule</div>
+  <div class="page-subtitle">View your current lesson slot and request a change below.</div>
+
+  <!-- Current slot -->
+  <div class="card">
+    <div class="card-title">Current Lesson Slot</div>
+    <div id="currentSlotArea" class="loading">Loading your schedule…</div>
+  </div>
+
+  <!-- Request change -->
+  <div class="card" id="requestCard" style="display:none">
+    <div class="card-title">Request a New Time</div>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px;">
+      Select a preferred slot below and submit a request. Your teacher will review and confirm.
+    </p>
+
+    <div style="margin-bottom:8px;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Filter by day</div>
+    <div class="filter-bar" id="dayFilters"></div>
+
+    <div style="margin-bottom:8px;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Lesson duration</div>
+    <div class="duration-filter">
+      <button class="dur-btn active" onclick="setDuration('all', this)">All</button>
+      <button class="dur-btn" onclick="setDuration(45, this)">45 min</button>
+      <button class="dur-btn" onclick="setDuration(60, this)">60 min</button>
+    </div>
+
+    <div class="slots-grid" id="slotsGrid"><div class="loading">Loading available slots…</div></div>
+
+    <div class="submit-area">
+      <div class="selected-info" id="selectedInfo">No slot selected</div>
+      <button class="btn-submit" id="submitBtn" onclick="submitRequest()" disabled>Submit Request</button>
+    </div>
+  </div>
+
+  <!-- Request history -->
+  <div class="card">
+    <div class="card-title">My Requests</div>
+    <div id="requestsArea" class="loading">Loading…</div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let studentData = null;
+  let allSlots = [];
+  let selectedSlotId = null;
+  let activeDayFilter = 'all';
+  let activeDuration = 'all';
+
+  const DAYS_ORDER = ['Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  async function init() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return; }
+    currentUser = session.user;
+    document.getElementById('userEmail').textContent = currentUser.email;
+    await loadStudent();
+    await loadSlots();
+    await loadRequests();
+  }
+
+  async function loadStudent() {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*, current_slot:slots(*)')
+      .eq('parent_email', currentUser.email)
+      .single();
+
+    const area = document.getElementById('currentSlotArea');
+
+    if (error || !data) {
+      area.innerHTML = '<div style="color:var(--muted);font-size:0.88rem;">No student found for your account. Please contact your teacher.</div>';
+      return;
+    }
+
+    studentData = data;
+    const slot = data.current_slot;
+
+    if (slot) {
+      const dur = duration(slot.start_time, slot.end_time);
+      area.innerHTML = `
+        <div class="current-slot">
+          <div>
+            <div class="slot-day">${slot.day_of_week}</div>
+            <div class="slot-time">${fmt(slot.start_time)} – ${fmt(slot.end_time)}</div>
+            <div class="slot-duration">${dur} min lesson</div>
+          </div>
+        </div>
+        <div class="student-name">Student: <strong>${data.name}</strong></div>
+      `;
+    } else {
+      area.innerHTML = '<div style="color:var(--muted);font-size:0.88rem;">No slot currently assigned. Please contact your teacher.</div>';
+    }
+
+    document.getElementById('requestCard').style.display = 'block';
+  }
+
+  async function loadSlots() {
+    const { data, error } = await supabase
+      .from('slots')
+      .select('*')
+      .eq('is_available', true)
+      .order('day_of_week')
+      .order('start_time');
+
+    if (error || !data) return;
+
+    // Exclude current slot
+    allSlots = data.filter(s => s.id !== studentData?.current_slot_id);
+
+    // Build day filter buttons
+    const days = [...new Set(allSlots.map(s => s.day_of_week))].sort((a,b) => DAYS_ORDER.indexOf(a) - DAYS_ORDER.indexOf(b));
+    const filterBar = document.getElementById('dayFilters');
+    filterBar.innerHTML = `<button class="filter-btn active" onclick="setDayFilter('all', this)">All Days</button>`;
+    days.forEach(d => {
+      filterBar.innerHTML += `<button class="filter-btn" onclick="setDayFilter('${d}', this)">${d}</button>`;
+    });
+
+    renderSlots();
+  }
+
+  function renderSlots() {
+    const grid = document.getElementById('slotsGrid');
+    let filtered = allSlots;
+
+    if (activeDayFilter !== 'all') filtered = filtered.filter(s => s.day_of_week === activeDayFilter);
+    if (activeDuration !== 'all') filtered = filtered.filter(s => duration(s.start_time, s.end_time) === activeDuration);
+
+    if (!filtered.length) {
+      grid.innerHTML = '<div class="no-slots">No slots available for this filter.</div>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(s => {
+      const dur = duration(s.start_time, s.end_time);
+      const sel = s.id === selectedSlotId ? 'selected' : '';
+      return `<div class="slot-option ${sel}" onclick="selectSlot('${s.id}', this)" data-id="${s.id}">
+        <div class="s-day">${s.day_of_week}</div>
+        <div class="s-time">${fmt(s.start_time)} – ${fmt(s.end_time)}</div>
+        <div class="s-dur">${dur} min</div>
+      </div>`;
+    }).join('');
+  }
+
+  function selectSlot(id, el) {
+    selectedSlotId = id;
+    document.querySelectorAll('.slot-option').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+
+    const slot = allSlots.find(s => s.id === id);
+    document.getElementById('selectedInfo').innerHTML = `Selected: <strong>${slot.day_of_week}, ${fmt(slot.start_time)} – ${fmt(slot.end_time)}</strong>`;
+    document.getElementById('submitBtn').disabled = false;
+  }
+
+  function setDayFilter(day, btn) {
+    activeDayFilter = day;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderSlots();
+  }
+
+  function setDuration(dur, btn) {
+    activeDuration = dur;
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderSlots();
+  }
+
+  async function submitRequest() {
+    if (!selectedSlotId || !studentData) return;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    const { error } = await supabase.from('reschedule_requests').insert({
+      student_id: studentData.id,
+      current_slot_id: studentData.current_slot_id,
+      requested_slot_id: selectedSlotId,
+      status: 'pending'
+    });
+
+    if (error) {
+      showToast('Something went wrong. Please try again.', 'error');
+    } else {
+      showToast('Request submitted! Your teacher will review it shortly.', 'success');
+      selectedSlotId = null;
+      document.getElementById('selectedInfo').textContent = 'No slot selected';
+      document.querySelectorAll('.slot-option').forEach(e => e.classList.remove('selected'));
+      await loadRequests();
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Submit Request';
+  }
+
+  async function loadRequests() {
+    const { data, error } = await supabase
+      .from('reschedule_requests')
+      .select('*, current_slot:slots!reschedule_requests_current_slot_id_fkey(*), requested_slot:slots!reschedule_requests_requested_slot_id_fkey(*)')
+      .eq('student_id', studentData?.id)
+      .order('created_at', { ascending: false });
+
+    const area = document.getElementById('requestsArea');
+
+    if (error || !data || !data.length) {
+      area.innerHTML = '<div class="empty-state">No requests submitted yet.</div>';
+      return;
+    }
+
+    area.innerHTML = data.map(r => `
+      <div class="request-item">
+        <div class="request-slots">
+          <div style="font-size:0.83rem;color:var(--muted);">From: <strong style="color:var(--ink)">${r.current_slot ? r.current_slot.day_of_week + ' ' + fmt(r.current_slot.start_time) : '—'}</strong></div>
+          <div class="request-arrow">↓</div>
+          <div style="font-size:0.83rem;color:var(--muted);">To: <strong style="color:var(--ink)">${r.requested_slot ? r.requested_slot.day_of_week + ' ' + fmt(r.requested_slot.start_time) : '—'}</strong></div>
+          <div class="request-date">${new Date(r.created_at).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'})}</div>
+        </div>
+        <div class="badge badge-${r.status}">${r.status}</div>
+      </div>
+    `).join('');
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    window.location.href = 'index.html';
+  }
+
+  function fmt(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':');
+    const hr = parseInt(h);
+    const ampm = hr >= 12 ? 'pm' : 'am';
+    const hr12 = hr > 12 ? hr - 12 : hr === 0 ? 12 : hr;
+    return `${hr12}:${m}${ampm}`;
+  }
+
+  function duration(start, end) {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm);
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  init();
+</script>
+</body>
+</html>
