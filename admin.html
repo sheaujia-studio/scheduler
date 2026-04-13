@@ -316,6 +316,21 @@
     .btn-add:hover { background: #2d2d4a; }
     .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    .btn-delete {
+      padding: 5px 12px;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--error-bg);
+      color: var(--error);
+      border: 1px solid #f5c6c2;
+      transition: opacity 0.15s;
+    }
+    .btn-delete:hover { opacity: 0.75; }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -565,6 +580,7 @@
             <th>Email</th>
             <th>Phone</th>
             <th>Current Slot</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -575,6 +591,7 @@
               <td style="color:var(--muted);font-size:0.8rem;">${s.parent_email}</td>
               <td style="color:var(--muted);font-size:0.8rem;">${s.parent_phone}</td>
               <td>${s.current_slot ? `<span style="color:var(--gold);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;">${s.current_slot.day_of_week}</span><br>${fmt(s.current_slot.start_time)} – ${fmt(s.current_slot.end_time)}` : '<span style="color:var(--muted)">—</span>'}</td>
+              <td><button class="btn-delete" onclick="deleteStudent('${s.id}', '${s.name}', this)">Delete</button></td>
             </tr>
           `).join('')}
         </tbody>
@@ -628,6 +645,21 @@
     btn.disabled = false;
     btn.textContent = 'Add Student & Send Invite';
     await loadStudents();
+  }
+
+  async function deleteStudent(id, name, btn) {
+    if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
+    btn.disabled = true;
+    btn.textContent = '…';
+    const { error } = await supabaseClient.from('students').delete().eq('id', id);
+    if (error) {
+      showToast('Error deleting student: ' + error.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Delete';
+    } else {
+      showToast(name + ' removed.', 'success');
+      await loadStudents();
+    }
   }
 
   function switchTab(name, btn) {
