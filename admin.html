@@ -331,6 +331,58 @@
     }
     .btn-delete:hover { opacity: 0.75; }
 
+    .btn-edit {
+      padding: 5px 12px;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      background: #f0f0f8;
+      color: var(--ink);
+      border: 1px solid #d0d0e0;
+      transition: opacity 0.15s;
+      margin-right: 6px;
+    }
+    .btn-edit:hover { background: #e0e0f0; }
+
+    /* Edit slot modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(26,26,46,0.5);
+      z-index: 200; display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+    .modal {
+      background: white; border-radius: 4px; padding: 32px;
+      width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-title {
+      font-family: 'Cormorant Garamond', serif; font-size: 1.2rem;
+      font-weight: 600; margin-bottom: 6px;
+    }
+    .modal-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 24px; }
+    .modal-label { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
+    .modal select {
+      width: 100%; padding: 10px 12px; border: 1px solid #e0ddd8; border-radius: 3px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink);
+      background: #fdfcfa; outline: none; margin-bottom: 24px;
+    }
+    .modal select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.12); }
+    .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-modal-cancel {
+      padding: 10px 20px; background: white; color: var(--muted);
+      border: 1px solid #e0ddd8; border-radius: 3px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    }
+    .btn-modal-save {
+      padding: 10px 24px; background: var(--ink); color: white;
+      border: none; border-radius: 3px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.82rem; letter-spacing: 0.06em;
+    }
+    .btn-modal-save:hover { background: #2d2d4a; }
+    .btn-modal-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -437,6 +489,22 @@
 </main>
 
 <div class="toast" id="toast"></div>
+
+<!-- Edit Slot Modal -->
+<div class="modal-overlay" id="editModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle">Edit Slot</div>
+    <div class="modal-sub" id="editModalSub"></div>
+    <label class="modal-label">Assign New Slot</label>
+    <select id="editSlotSelect">
+      <option value="">— No slot assigned —</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-modal-save" id="saveSlotBtn" onclick="saveSlot()">Save Changes</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -615,7 +683,10 @@
               <td style="color:var(--muted);font-size:0.8rem;">${s.parent_email}</td>
               <td style="color:var(--muted);font-size:0.8rem;">${s.parent_phone}</td>
               <td>${s.current_slot ? `<span style="color:var(--gold);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;">${s.current_slot.day_of_week}</span><br>${fmt(s.current_slot.start_time)} – ${fmt(s.current_slot.end_time)}` : '<span style="color:var(--muted)">—</span>'}</td>
-              <td><button class="btn-delete" onclick="deleteStudent('${s.id}', '${s.name}', this)">Delete</button></td>
+              <td>
+                <button class="btn-edit" onclick="openEditModal('${s.id}', '${s.name}', '${s.current_slot_id || ''}')" >Edit Slot</button>
+                <button class="btn-delete" onclick="deleteStudent('${s.id}', '${s.name}', this)">Delete</button>
+              </td>
             </tr>
           `).join('')}
         </tbody>
@@ -721,6 +792,79 @@
   }
 
   init();
+
+  // ---- Edit slot modal ----
+  let editingStudentId = null;
+  let editingCurrentSlotId = null;
+
+  async function openEditModal(studentId, studentName, currentSlotId) {
+    editingStudentId = studentId;
+    editingCurrentSlotId = currentSlotId || null;
+
+    document.getElementById('editModalTitle').textContent = 'Edit Slot — ' + studentName;
+    document.getElementById('editModalSub').textContent = 'Choose a new lesson slot for ' + studentName + '.';
+
+    // Build slot options: all slots except those taken by OTHER students
+    const { data: studentsData } = await supabaseClient.from('students').select('current_slot_id, current_slot:slots(*)').not('current_slot_id', 'is', null);
+    const takenSlots = (studentsData || [])
+      .filter(s => s.current_slot_id !== currentSlotId) // exclude this student's own slot
+      .map(s => s.current_slot).filter(Boolean);
+
+    const DAYS_ORDER = ['Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const available = allSlots
+      .filter(s => !overlapsAny(s, takenSlots))
+      .sort((a,b) => {
+        const di = DAYS_ORDER.indexOf(a.day_of_week) - DAYS_ORDER.indexOf(b.day_of_week);
+        if (di !== 0) return di;
+        return a.start_time.localeCompare(b.start_time);
+      });
+
+    const select = document.getElementById('editSlotSelect');
+    select.innerHTML = '<option value="">— No slot assigned —</option>';
+    available.forEach(s => {
+      const dur = duration(s.start_time, s.end_time);
+      const selected = s.id === currentSlotId ? 'selected' : '';
+      select.innerHTML += `<option value="${s.id}" ${selected}>${s.day_of_week} ${fmt(s.start_time)}–${fmt(s.end_time)} (${dur}min)</option>`;
+    });
+
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+    editingStudentId = null;
+    editingCurrentSlotId = null;
+  }
+
+  async function saveSlot() {
+    const newSlotId = document.getElementById('editSlotSelect').value || null;
+    const btn = document.getElementById('saveSlotBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    const { error } = await supabaseClient
+      .from('students')
+      .update({ current_slot_id: newSlotId })
+      .eq('id', editingStudentId);
+
+    if (error) {
+      showToast('Error updating slot: ' + error.message, 'error');
+    } else {
+      showToast('Slot updated successfully!', 'success');
+      closeEditModal();
+      await loadStudents();
+      await loadSlots(); // refresh dropdown too
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+  }
+
+  // Close modal on overlay click
+  document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+  });
+
 </script>
 </body>
 </html>
