@@ -542,11 +542,19 @@
   }
 
   async function loadSlots() {
-    const { data } = await supabaseClient.from('slots').select('*').eq('is_available', true).order('day_of_week').order('start_time');
-    allSlots = data || [];
+    // Get all available slots
+    const { data: slotsData } = await supabaseClient.from('slots').select('*').eq('is_available', true).order('day_of_week').order('start_time');
+    allSlots = slotsData || [];
+
+    // Get all slot IDs already assigned to students
+    const { data: studentsData } = await supabaseClient.from('students').select('current_slot_id').not('current_slot_id', 'is', null);
+    const takenSlotIds = new Set((studentsData || []).map(s => s.current_slot_id));
+
+    // Filter out taken slots
+    const availableSlots = allSlots.filter(s => !takenSlotIds.has(s.id));
 
     const DAYS_ORDER = ['Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    const sorted = [...allSlots].sort((a,b) => {
+    const sorted = [...availableSlots].sort((a,b) => {
       const di = DAYS_ORDER.indexOf(a.day_of_week) - DAYS_ORDER.indexOf(b.day_of_week);
       if (di !== 0) return di;
       return a.start_time.localeCompare(b.start_time);

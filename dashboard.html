@@ -227,11 +227,24 @@
       .order('day_of_week').order('start_time');
 
     if (error || !data) return;
+
+    // Get all slots already assigned to other students
+    const { data: studentsData } = await supabaseClient.from('students').select('current_slot_id').not('current_slot_id', 'is', null);
+    const takenSlotIds = new Set((studentsData || []).map(s => s.current_slot_id));
+
+    // Store all slots and taken slot IDs globally for use in renderSlots
     allSlots = data;
+    window._takenSlotIds = takenSlotIds;
 
     const container = document.getElementById('childRequestBlocks');
     container.innerHTML = students.map(s => {
-      const availableSlots = allSlots.filter(sl => sl.id !== s.current_slot_id);
+      // Exclude: slots taken by OTHER students (but not this child's own slot which is excluded separately)
+      const myFamilySlotIds = new Set(students.map(st => st.current_slot_id).filter(Boolean));
+      const availableSlots = allSlots.filter(sl => {
+        if (sl.id === s.current_slot_id) return false; // exclude own current slot
+        if (takenSlotIds.has(sl.id) && !myFamilySlotIds.has(sl.id)) return false; // exclude slots taken by others
+        return true;
+      });
       const days = [...new Set(availableSlots.map(sl => sl.day_of_week))]
         .sort((a,b) => DAYS_ORDER.indexOf(a) - DAYS_ORDER.indexOf(b));
 
@@ -267,7 +280,19 @@
   function renderSlots(studentId) {
     const student = students.find(s => s.id === studentId);
     const grid = document.getElementById('slotsGrid-' + studentId);
-    let filtered = allSlots.filter(sl => sl.id !== student.current_slot_id);
+    const myFamilySlotIds = new Set(students.map(st => st.current_slot_id).filter(Boolean));
+    const takenSlotIds = new Set(allSlots
+      .filter(sl => {
+        // a slot is taken if assigned to a student not in this family
+        return !myFamilySlotIds.has(sl.id) === false;
+      }).map(sl => sl.id));
+
+    // Get globally taken slots by fetching from allSlots context (set during loadSlots)
+    let filtered = allSlots.filter(sl => {
+      if (sl.id === student.current_slot_id) return false; // own current slot
+      if (window._takenSlotIds && window._takenSlotIds.has(sl.id) && !myFamilySlotIds.has(sl.id)) return false; // taken by others
+      return true;
+    });
 
     if (dayFilters[studentId] !== 'all') filtered = filtered.filter(sl => sl.day_of_week === dayFilters[studentId]);
     if (durFilters[studentId] !== 'all') filtered = filtered.filter(sl => duration(sl.start_time, sl.end_time) === durFilters[studentId]);
