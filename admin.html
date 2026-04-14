@@ -331,6 +331,58 @@
     }
     .btn-delete:hover { opacity: 0.75; }
 
+    /* View toggle */
+    .view-toggle {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .toggle-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border-radius: 3px; font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s;
+      background: white; color: var(--muted); border: 1px solid #e0ddd8;
+    }
+    .toggle-btn.active { background: var(--ink); color: white; border-color: var(--ink); }
+    .toggle-btn:hover:not(.active) { border-color: var(--gold); color: var(--ink); }
+
+    /* Calendar grid */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .cal-day-col {
+      background: white; border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 4px; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(26,26,46,0.04);
+    }
+
+    .cal-day-header {
+      background: var(--ink); color: white;
+      padding: 10px 14px; font-size: 0.72rem;
+      letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500;
+      text-align: center;
+    }
+
+    .cal-slots { padding: 8px; display: flex; flex-direction: column; gap: 6px; min-height: 60px; }
+
+    .cal-slot-card {
+      background: var(--cream); border-left: 3px solid var(--gold);
+      border-radius: 2px; padding: 8px 10px; cursor: pointer;
+      transition: box-shadow 0.15s;
+    }
+    .cal-slot-card:hover { box-shadow: 0 2px 8px rgba(201,168,76,0.2); }
+    .cal-slot-time { font-size: 0.7rem; color: var(--gold); letter-spacing: 0.06em; margin-bottom: 3px; }
+    .cal-slot-name { font-size: 0.82rem; font-weight: 500; color: var(--ink); }
+    .cal-slot-dur { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+
+    .cal-empty { text-align: center; padding: 20px 8px; color: var(--muted); font-size: 0.75rem; font-style: italic; }
+
+    .cal-legend { font-size: 0.75rem; color: var(--muted); margin-bottom: 16px; }
+    .cal-legend span { color: var(--gold); }
+
     .btn-edit {
       padding: 5px 12px;
       border-radius: 3px;
@@ -480,9 +532,28 @@
       <button class="btn-add" onclick="addStudent()">Add Student & Send Invite</button>
     </div>
 
-    <!-- Students list -->
-    <div class="card">
-      <div id="studentsArea" class="loading">Loading students…</div>
+    <!-- View toggle -->
+    <div class="view-toggle">
+      <button class="toggle-btn active" id="toggleCalendar" onclick="switchView('calendar', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar View
+      </button>
+      <button class="toggle-btn" id="toggleTable" onclick="switchView('table', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        List View
+      </button>
+    </div>
+
+    <!-- Calendar view -->
+    <div id="calendarView">
+      <div id="calendarArea" class="loading">Loading schedule…</div>
+    </div>
+
+    <!-- Table view -->
+    <div id="tableView" style="display:none">
+      <div class="card">
+        <div id="studentsArea" class="loading">Loading students…</div>
+      </div>
     </div>
   </div>
 
@@ -652,16 +723,107 @@
     });
   }
 
+  let currentView = 'calendar';
+  let allStudentsData = [];
+
+  function switchView(view, btn) {
+    currentView = view;
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('calendarView').style.display = view === 'calendar' ? 'block' : 'none';
+    document.getElementById('tableView').style.display = view === 'table' ? 'block' : 'none';
+  }
+
   async function loadStudents() {
     const { data, error } = await supabaseClient
       .from('students')
       .select('*, current_slot:slots(*)')
       .order('name');
 
+    if (error) {
+      document.getElementById('calendarArea').innerHTML = '<div class="empty-state">Error loading students.</div>';
+      document.getElementById('studentsArea').innerHTML = '<div class="empty-state">Error loading students.</div>';
+      return;
+    }
+
+    allStudentsData = data || [];
+
+    if (!allStudentsData.length) {
+      document.getElementById('calendarArea').innerHTML = '<div class="card"><div class="empty-state">No students added yet. Use the form above to add your first student.</div></div>';
+      document.getElementById('studentsArea').innerHTML = '<div class="empty-state">No students added yet.</div>';
+      return;
+    }
+
+    renderCalendarView(allStudentsData);
+    renderTableView(allStudentsData);
+  }
+
+  function renderCalendarView(data) {
+    const DAYS = ['Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const area = document.getElementById('calendarArea');
+
+    // Group students by day
+    const byDay = {};
+    DAYS.forEach(d => byDay[d] = []);
+    data.forEach(s => {
+      if (s.current_slot) {
+        const d = s.current_slot.day_of_week;
+        if (byDay[d]) byDay[d].push(s);
+      }
+    });
+
+    // Sort each day's students by start time
+    DAYS.forEach(d => {
+      byDay[d].sort((a,b) => a.current_slot.start_time.localeCompare(b.current_slot.start_time));
+    });
+
+    const unassigned = data.filter(s => !s.current_slot);
+
+    area.innerHTML = `
+      <div class="cal-legend">Click on a student card to edit their slot. <span>${data.length} students total.</span></div>
+      <div class="calendar-grid">
+        ${DAYS.map(day => `
+          <div class="cal-day-col">
+            <div class="cal-day-header">${day}</div>
+            <div class="cal-slots">
+              ${byDay[day].length ? byDay[day].map(s => `
+                <div class="cal-slot-card" onclick="openEditModal('${s.id}', '${s.name}', '${s.current_slot_id || ''}')">
+                  <div class="cal-slot-time">${fmt(s.current_slot.start_time)} – ${fmt(s.current_slot.end_time)}</div>
+                  <div class="cal-slot-name">${s.name}</div>
+                  <div class="cal-slot-dur">${duration(s.current_slot.start_time, s.current_slot.end_time)} min</div>
+                </div>`).join('')
+              : '<div class="cal-empty">No lessons</div>'}
+            </div>
+          </div>`).join('')}
+      </div>
+      ${unassigned.length ? `
+        <div class="card" style="margin-top:0">
+          <div class="card-title" style="font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+            Unassigned
+            <span style="flex:1;height:1px;background:rgba(201,168,76,0.25);display:block"></span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${unassigned.map(s => `
+              <div class="cal-slot-card" style="min-width:140px" onclick="openEditModal('${s.id}', '${s.name}', '')">
+                <div class="cal-slot-time" style="color:var(--muted)">No slot</div>
+                <div class="cal-slot-name">${s.name}</div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}`;
+  }
+
+  function renderTableView(data) {
+    const DAYS = ['Tuesday','Wednesday','Thursday','Friday','Saturday'];
     const area = document.getElementById('studentsArea');
 
-    if (error) { area.innerHTML = '<div class="empty-state">Error loading students.</div>'; return; }
-    if (!data || !data.length) { area.innerHTML = '<div class="empty-state">No students added yet. Use the form above to add your first student.</div>'; return; }
+    // Sort by day then time
+    const sorted = [...data].sort((a, b) => {
+      const di = DAYS.indexOf(a.current_slot?.day_of_week) - DAYS.indexOf(b.current_slot?.day_of_week);
+      if (di !== 0) return di;
+      if (!a.current_slot) return 1;
+      if (!b.current_slot) return -1;
+      return a.current_slot.start_time.localeCompare(b.current_slot.start_time);
+    });
 
     area.innerHTML = `
       <table class="students-table">
@@ -676,15 +838,17 @@
           </tr>
         </thead>
         <tbody>
-          ${data.map(s => `
+          ${sorted.map(s => `
             <tr>
               <td><strong>${s.name}</strong></td>
               <td>${s.parent_name}</td>
               <td style="color:var(--muted);font-size:0.8rem;">${s.parent_email}</td>
               <td style="color:var(--muted);font-size:0.8rem;">${s.parent_phone}</td>
-              <td>${s.current_slot ? `<span style="color:var(--gold);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;">${s.current_slot.day_of_week}</span><br>${fmt(s.current_slot.start_time)} – ${fmt(s.current_slot.end_time)}` : '<span style="color:var(--muted)">—</span>'}</td>
+              <td>${s.current_slot
+                ? `<span style="color:var(--gold);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;">${s.current_slot.day_of_week}</span><br>${fmt(s.current_slot.start_time)} – ${fmt(s.current_slot.end_time)}`
+                : '<span style="color:var(--muted)">—</span>'}</td>
               <td>
-                <button class="btn-edit" onclick="openEditModal('${s.id}', '${s.name}', '${s.current_slot_id || ''}')" >Edit Slot</button>
+                <button class="btn-edit" onclick="openEditModal('${s.id}', '${s.name}', '${s.current_slot_id || ''}')">Edit Slot</button>
                 <button class="btn-delete" onclick="deleteStudent('${s.id}', '${s.name}', this)">Delete</button>
               </td>
             </tr>
@@ -744,16 +908,15 @@
 
   async function deleteStudent(id, name, btn) {
     if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
-    btn.disabled = true;
-    btn.textContent = '…';
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
     const { error } = await supabaseClient.from('students').delete().eq('id', id);
     if (error) {
       showToast('Error deleting student: ' + error.message, 'error');
-      btn.disabled = false;
-      btn.textContent = 'Delete';
+      if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
     } else {
       showToast(name + ' removed.', 'success');
       await loadStudents();
+      await loadSlots();
     }
   }
 
