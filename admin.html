@@ -634,7 +634,7 @@
     const { error: authError } = await supabaseClient.auth.signUp({
       email,
       password: Math.random().toString(36).slice(-10) + 'Aa1!',
-      options: { emailRedirectTo: 'https://sheaujia-studio.github.io/scheduler/' }
+      options: { emailRedirectTo: 'https://sheaujia-studio.github.io/scheduler/set-password.html' }
     });
 
     // Clear form
